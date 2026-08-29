@@ -2,172 +2,1643 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>邏輯圖建構工具 v2.0｜風格輸出版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <!-- 引入 html2canvas 用於匯出圖片 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <meta name="theme-color" content="#0f172a" />
+  <title>邏輯圖建構工具 v3.0｜小白友善實測版</title>
+
+  <!-- PNG 匯出：需要網路載入。第一來源失敗時自動嘗試第二來源。 -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+    onerror="this.onerror=null;this.src='https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js'">
+  </script>
+
   <style>
-    :root {
-      --bg: #f5f5f5; --fg: #222; --accent: #3b82f6;
-      --card-bg: #ffffff; --card-border: rgba(0,0,0,0.06);
-      --shadow: 0 12px 30px rgba(0,0,0,0.08);
-      --radius-lg: 18px; --radius-sm: 10px;
-      --font-main: system-ui, -apple-system, "Segoe UI", sans-serif;
-      --font-title: var(--font-main);
-      --line-color: rgba(0,0,0,0.12);
-      --safe-bottom: env(safe-area-inset-bottom, 20px);
-      --deco-opacity: 1;
+    :root{
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-right: env(safe-area-inset-right, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-left: env(safe-area-inset-left, 0px);
+
+      --ui-bg:#f4f7fb;
+      --ui-card:#ffffff;
+      --ui-card-2:#eef3f9;
+      --ui-fg:#152033;
+      --ui-muted:#627087;
+      --ui-line:#d9e1ec;
+      --ui-accent:#2563eb;
+      --ui-accent-soft:#dbeafe;
+      --ui-danger:#dc2626;
+      --ui-success:#15803d;
+      --ui-shadow:0 12px 32px rgba(15,23,42,.08);
+
+      --font-scale:1;
+      --radius-xl:24px;
+      --radius-lg:18px;
+      --radius-md:14px;
+      --tap:48px;
     }
 
-    /* ====== 7 種風格裝飾系統 ====== */
-    /* 1. 禪風 Zen：極簡留白，月暈背景 */
-    body[data-style="zen"] { 
-      --bg: #f7f4ee; --fg: #2f2a25; --accent: #7c9c6b; --card-bg: #fbf8f2; 
-      --card-border: rgba(124,156,107,0.3); --shadow: 0 20px 40px rgba(0,0,0,0.05); 
-      --font-main: "Noto Serif TC", serif; --font-title: var(--font-main);
-    }
-    body[data-style="zen"] .export-card {
-      background-image: radial-gradient(circle at 80% 20%, rgba(124,156,107,0.08) 0%, transparent 40%);
-      border: 1px solid rgba(124,156,107,0.2);
-    }
-
-    /* 2. 水墨 Ink：宣紙紋理，毛筆邊框感 */
-    body[data-style="ink"] { 
-      --bg: #fdfcf8; --fg: #1f1f1f; --accent: #333; --card-bg: #ffffff; 
-      --card-border: rgba(0,0,0,0.15); --shadow: 0 16px 36px rgba(0,0,0,0.12); 
-      --font-main: "Noto Serif TC", serif; --font-title: var(--font-main);
-    }
-    body[data-style="ink"] .export-card {
-      background-color: #fdfbf7;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-      border: 2px solid #222;
-      box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
-    }
-    body[data-style="ink"] .export-card::after {
-      content: "印"; position: absolute; bottom: 20px; right: 20px; 
-      font-family: "Noto Serif TC", serif; font-size: 24px; color: #c0392b; 
-      border: 2px solid #c0392b; padding: 4px 8px; border-radius: 4px; opacity: 0.8;
+    @media (prefers-color-scheme: dark){
+      html[data-theme="system"]{
+        --ui-bg:#07111f;
+        --ui-card:#0e1a2b;
+        --ui-card-2:#132238;
+        --ui-fg:#edf4ff;
+        --ui-muted:#9db0cb;
+        --ui-line:#263954;
+        --ui-accent:#60a5fa;
+        --ui-accent-soft:#102b4f;
+        --ui-danger:#f87171;
+        --ui-success:#4ade80;
+        --ui-shadow:0 16px 36px rgba(0,0,0,.28);
+      }
     }
 
-    /* 3. 昭和 Showa：復古放射線，粗黑邊框 */
-    body[data-style="showa"] { 
-      --bg: #fef6e8; --fg: #3b2c28; --accent: #e67a4e; --card-bg: #fffaf0; 
-      --card-border: #3b2c28; --shadow: 8px 8px 0px rgba(59,44,40,0.2); 
-      --font-main: "Noto Sans TC", sans-serif; --font-title: var(--font-main);
-    }
-    body[data-style="showa"] .export-card {
-      background-color: #fffaf0;
-      background-image: repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 20px, rgba(230,122,78,0.05) 20px, rgba(230,122,78,0.05) 22px);
-      border: 4px solid #3b2c28;
-    }
-
-    /* 4. 黏土 Clay：柔和 3D 陰影，圓潤邊框 */
-    body[data-style="clay"] { 
-      --bg: #f3f1ff; --fg: #26233a; --accent: #7c3aed; --card-bg: #f3f1ff; 
-      --card-border: transparent; --shadow: none; 
-      --font-main: "Noto Sans TC", sans-serif; --font-title: var(--font-main);
-    }
-    body[data-style="clay"] .export-card {
-      background: #f3f1ff;
-      border-radius: 30px;
-      box-shadow: 20px 20px 60px #d1cde6, -20px -20px 60px #ffffff;
-      border: none;
+    html[data-theme="dark"]{
+      --ui-bg:#07111f;
+      --ui-card:#0e1a2b;
+      --ui-card-2:#132238;
+      --ui-fg:#edf4ff;
+      --ui-muted:#9db0cb;
+      --ui-line:#263954;
+      --ui-accent:#60a5fa;
+      --ui-accent-soft:#102b4f;
+      --ui-danger:#f87171;
+      --ui-success:#4ade80;
+      --ui-shadow:0 16px 36px rgba(0,0,0,.28);
     }
 
-    /* 5. 貼紙 Sticker：白色粗邊，Drop Shadow */
-    body[data-style="sticker"] { 
-      --bg: #fdfdfd; --fg: #1f2933; --accent: #ff6b6b; --card-bg: #ffffff; 
-      --card-border: #ffffff; --shadow: 0 20px 40px rgba(0,0,0,0.15); 
-      --font-main: "Noto Sans TC", sans-serif; --font-title: var(--font-main);
-    }
-    body[data-style="sticker"] .export-card {
-      background: #ffffff;
-      border: 12px solid #ffffff;
-      outline: 2px dashed #e5e7eb;
-      outline-offset: -6px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      transform: rotate(-1deg);
-    }
-
-    /* 6. 巴洛克 Baroque：金色邊框，古典花紋 */
-    body[data-style="baroque"] { 
-      --bg: #f7f2ea; --fg: #2b1b18; --accent: #b8860b; --card-bg: #fbf5e9; 
-      --card-border: #b8860b; --shadow: 0 24px 50px rgba(60,40,30,0.25); 
-      --font-main: "Noto Serif TC", serif; --font-title: var(--font-main);
-    }
-    body[data-style="baroque"] .export-card {
-      background: #fbf5e9;
-      border: 2px solid #b8860b;
-      box-shadow: inset 0 0 0 4px #fbf5e9, inset 0 0 0 6px #b8860b, 0 20px 40px rgba(0,0,0,0.2);
-    }
-    body[data-style="baroque"] .export-card::before,
-    body[data-style="baroque"] .export-card::after {
-      content: "❧"; position: absolute; font-size: 30px; color: #b8860b; opacity: 0.6;
-    }
-    body[data-style="baroque"] .export-card::before { top: 10px; left: 15px; }
-    body[data-style="baroque"] .export-card::after { bottom: 10px; right: 15px; transform: rotate(180deg); }
-
-    /* 7. 科技 Tech：網格背景，發光邊框，HUD 元素 */
-    body[data-style="tech"] { 
-      --bg: #050816; --fg: #e5e7eb; --accent: #38bdf8; --card-bg: #0b1220; 
-      --card-border: rgba(56,189,248,0.3); --shadow: 0 0 30px rgba(56,189,248,0.1); 
-      --font-main: system-ui, sans-serif; --font-title: "Orbitron", system-ui, sans-serif;
-    }
-    body[data-style="tech"] .export-card {
-      background-color: #0b1220;
-      background-image: 
-        linear-gradient(rgba(56,189,248,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(56,189,248,0.05) 1px, transparent 1px);
-      background-size: 20px 20px;
-      border: 1px solid rgba(56,189,248,0.3);
-      box-shadow: inset 0 0 20px rgba(56,189,248,0.05), 0 0 20px rgba(56,189,248,0.1);
-    }
-    body[data-style="tech"] .export-card::before {
-      content: ""; position: absolute; top: -1px; left: -1px; width: 20px; height: 20px;
-      border-top: 2px solid #38bdf8; border-left: 2px solid #38bdf8;
-    }
-    body[data-style="tech"] .export-card::after {
-      content: ""; position: absolute; bottom: -1px; right: -1px; width: 20px; height: 20px;
-      border-bottom: 2px solid #38bdf8; border-right: 2px solid #38bdf8;
+    html[data-theme="light"]{
+      --ui-bg:#f4f7fb;
+      --ui-card:#ffffff;
+      --ui-card-2:#eef3f9;
+      --ui-fg:#152033;
+      --ui-muted:#627087;
+      --ui-line:#d9e1ec;
+      --ui-accent:#2563eb;
+      --ui-accent-soft:#dbeafe;
+      --ui-danger:#dc2626;
+      --ui-success:#15803d;
+      --ui-shadow:0 12px 32px rgba(15,23,42,.08);
     }
 
-    /* ====== 基礎版面與 UI ====== */
-    body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--font-main); -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s; }
-    .page { max-width: 960px; margin: 0 auto; padding: 20px 16px calc(80px + var(--safe-bottom)); }
-    
-    .header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-    .title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    h1 { margin: 0; font-family: var(--font-title); font-size: 1.4rem; letter-spacing: 0.04em; }
-    .subtitle { font-size: 0.85rem; opacity: 0.7; margin-top: 4px; }
-    
-    .style-switcher { display: flex; flex-wrap: wrap; gap: 8px; }
-    .style-btn { border: 1px solid var(--card-border); background: var(--card-bg); color: var(--fg); padding: 8px 12px; border-radius: 999px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); transition: all 0.15s ease; }
-    .style-btn span.dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
-    .style-btn.active { border-color: var(--accent); box-shadow: 0 6px 14px rgba(0,0,0,0.1); transform: translateY(-1px); font-weight: 600; }
-
-    /* ====== 匯出主體區域 (Export Area) ====== */
-    .export-wrapper {
-      padding: 20px 0;
-      display: flex;
-      justify-content: center;
+    *{box-sizing:border-box}
+    html{background:var(--ui-bg);color-scheme:light dark}
+    body{
+      margin:0;
+      min-height:100vh;
+      background:var(--ui-bg);
+      color:var(--ui-fg);
+      font-family:system-ui,-apple-system,"Segoe UI","Noto Sans TC",sans-serif;
+      font-size:calc(16px * var(--font-scale));
+      -webkit-font-smoothing:antialiased;
+      transition:background .25s ease,color .25s ease;
     }
-    .export-card {
-      width: 100%;
-      max-width: 800px;
-      min-height: 500px;
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow);
-      padding: 40px 30px;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s;
-      box-sizing: border-box;
+    button,input,textarea,select{font:inherit}
+    button{touch-action:manipulation}
+    button:focus-visible,[contenteditable="true"]:focus-visible{
+      outline:3px solid color-mix(in srgb,var(--ui-accent) 45%,transparent);
+      outline-offset:2px;
     }
 
-    .logic-root { text-align: center; margin-bottom: 30px; }
-    .logic-root-title { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 24px; border-radius: var(--radius-sm); border: 1px solid var(--accent); background: color-mix(in srgb, var(--card-bg) 85%, var(--accent) 15%); cursor: text; }
-    .logic-root-title:focus { outline: 2px solid var(--accent); }
-    .logic-root-title .label { font-size: 0.75rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em; }
+    .app-shell{
+      width:min(100%,1020px);
+      margin:0 auto;
+      padding:
+        calc(12px + var(--safe-top))
+        calc(14px + var(--safe-right))
+        calc(88px + var(--safe-bottom))
+        calc(14px + var(--safe-left));
+    }
+
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:60;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-height:64px;
+      margin:calc(-12px - var(--safe-top)) calc(-14px - var(--safe-right)) 18px calc(-14px - var(--safe-left));
+      padding:calc(10px + var(--safe-top)) calc(14px + var(--safe-right)) 10px calc(14px + var(--safe-left));
+      background:color-mix(in srgb,var(--ui-bg) 88%,transparent);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid color-mix(in srgb,var(--ui-line) 70%,transparent);
+    }
+    .back-btn,.icon-btn{
+      min-width:var(--tap);height:var(--tap);
+      border:1px solid var(--ui-line);
+      border-radius:14px;
+      background:var(--ui-card);
+      color:var(--ui-fg);
+      cursor:pointer;
+      display:inline-grid;
+      place-items:center;
+      box-shadow:0 4px 12px rgba(15,23,42,.04);
+    }
+    .back-btn[hidden]{display:none}
+    .topbar-title{min-width:0;flex:1}
+    .topbar-title strong{display:block;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .topbar-title span{display:block;color:var(--ui-muted);font-size:.76rem;margin-top:2px}
+    .top-actions{display:flex;gap:8px}
+    .font-btn{font-weight:800;font-size:.9rem}
+
+    .screen{display:none;animation:fadeSlide .2s ease}
+    .screen.active{display:block}
+    @keyframes fadeSlide{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:none}
+    }
+
+    .hero{
+      background:
+        radial-gradient(circle at 90% 10%,color-mix(in srgb,var(--ui-accent) 18%,transparent),transparent 34%),
+        linear-gradient(145deg,var(--ui-card),color-mix(in srgb,var(--ui-card) 88%,var(--ui-accent-soft)));
+      border:1px solid var(--ui-line);
+      border-radius:var(--radius-xl);
+      padding:24px;
+      box-shadow:var(--ui-shadow);
+      overflow:hidden;
+    }
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:6px 10px;border-radius:999px;
+      background:var(--ui-accent-soft);color:var(--ui-accent);
+      font-size:.76rem;font-weight:800;
+    }
+    .hero h1{font-size:clamp(1.55rem,4vw,2.2rem);line-height:1.2;margin:14px 0 8px}
+    .hero p{margin:0;color:var(--ui-muted);line-height:1.7}
+    .status-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+    .status-chip{
+      display:inline-flex;align-items:center;gap:7px;
+      padding:8px 10px;border:1px solid var(--ui-line);
+      border-radius:999px;background:var(--ui-card);font-size:.78rem;color:var(--ui-muted)
+    }
+    .status-dot{width:8px;height:8px;border-radius:50%;background:var(--ui-success)}
+
+    .main-grid{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:16px;
+    }
+    .main-key{
+      min-height:148px;
+      border:1px solid var(--ui-line);
+      border-radius:var(--radius-lg);
+      background:var(--ui-card);
+      color:var(--ui-fg);
+      text-align:left;
+      padding:18px;
+      cursor:pointer;
+      box-shadow:0 8px 22px rgba(15,23,42,.05);
+      transition:transform .15s ease,border-color .15s ease;
+    }
+    .main-key:active{transform:scale(.985)}
+    .main-key:hover{border-color:var(--ui-accent)}
+    .main-key .ico{font-size:1.75rem;display:block;margin-bottom:14px}
+    .main-key strong{font-size:1.05rem;display:block}
+    .main-key small{display:block;margin-top:7px;color:var(--ui-muted);line-height:1.45}
+    .secondary-row{
+      display:flex;gap:10px;flex-wrap:wrap;margin-top:14px
+    }
+    .secondary-action{
+      min-height:46px;padding:0 14px;
+      border:1px solid var(--ui-line);
+      border-radius:13px;background:var(--ui-card);color:var(--ui-fg);
+      cursor:pointer;
+    }
+
+    .section-head{margin:6px 0 16px}
+    .section-head h2{margin:0;font-size:1.35rem}
+    .section-head p{margin:6px 0 0;color:var(--ui-muted);line-height:1.6;font-size:.9rem}
+
+    .panel{
+      border:1px solid var(--ui-line);
+      border-radius:var(--radius-lg);
+      background:var(--ui-card);
+      box-shadow:0 8px 24px rgba(15,23,42,.04);
+      padding:16px;
+    }
+    .panel + .panel{margin-top:14px}
+    .panel-title{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      margin-bottom:12px
+    }
+    .panel-title strong{font-size:.95rem}
+    .muted{color:var(--ui-muted)}
+    .hint{font-size:.78rem;color:var(--ui-muted);line-height:1.55}
+
+    .toolbar{
+      display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px
+    }
+    .tool-btn,.primary-btn,.danger-btn{
+      min-height:44px;border-radius:12px;padding:0 13px;cursor:pointer
+    }
+    .tool-btn{
+      border:1px solid var(--ui-line);background:var(--ui-card-2);color:var(--ui-fg)
+    }
+    .primary-btn{
+      border:1px solid var(--ui-accent);background:var(--ui-accent);color:#fff;font-weight:800
+    }
+    .danger-btn{
+      border:1px solid color-mix(in srgb,var(--ui-danger) 50%,var(--ui-line));
+      background:color-mix(in srgb,var(--ui-danger) 8%,var(--ui-card));
+      color:var(--ui-danger)
+    }
+    .wide{width:100%}
+
+    .save-indicator{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:.76rem;color:var(--ui-muted)
+    }
+    .save-indicator::before{
+      content:"";width:7px;height:7px;border-radius:50%;background:var(--ui-success)
+    }
+    .save-indicator.saving::before{background:#f59e0b}
+
+    /* ===== 輸出卡片 / 7 種風格 ===== */
+    .workspace-host{
+      display:flex;
+      justify-content:center;
+      overflow:auto;
+      padding:4px 0 12px;
+    }
+    .export-card{
+      --art-bg:#f7f4ee;
+      --art-fg:#2f2a25;
+      --art-accent:#7c9c6b;
+      --art-card:#fbf8f2;
+      --art-border:rgba(124,156,107,.3);
+      --art-line:rgba(47,42,37,.14);
+      --art-shadow:0 18px 42px rgba(0,0,0,.08);
+      --art-title-font:"Noto Serif TC",serif;
+      width:100%;
+      max-width:820px;
+      min-height:520px;
+      padding:40px 30px;
+      border-radius:22px;
+      position:relative;
+      overflow:hidden;
+      background:var(--art-card);
+      color:var(--art-fg);
+      border:1px solid var(--art-border);
+      box-shadow:var(--art-shadow);
+      font-size:calc(16px * var(--font-scale));
+      isolation:isolate;
+    }
+    .export-card[data-style="zen"]{
+      --art-bg:#f7f4ee;--art-fg:#2f2a25;--art-accent:#7c9c6b;--art-card:#fbf8f2;
+      --art-border:rgba(124,156,107,.26);--art-line:rgba(47,42,37,.15);
+      --art-title-font:"Noto Serif TC",serif;
+      background:
+        radial-gradient(circle at 80% 18%,rgba(124,156,107,.10),transparent 34%),
+        #fbf8f2;
+    }
+    .export-card[data-style="ink"]{
+      --art-bg:#fdfcf8;--art-fg:#1f1f1f;--art-accent:#333;--art-card:#fdfbf7;
+      --art-border:#202020;--art-line:rgba(0,0,0,.18);--art-title-font:"Noto Serif TC",serif;
+      border:2px solid #222;
+      border-radius:5px;
+      box-shadow:4px 4px 0 rgba(0,0,0,.10);
+      background-color:#fdfbf7;
+      background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.045'/%3E%3C/svg%3E");
+    }
+    .export-card[data-style="ink"]::after{
+      content:"印";position:absolute;right:22px;bottom:20px;
+      color:#b42318;border:2px solid #b42318;border-radius:4px;padding:3px 7px;
+      font:700 22px "Noto Serif TC",serif;opacity:.72;z-index:-1
+    }
+    .export-card[data-style="showa"]{
+      --art-bg:#fef6e8;--art-fg:#3b2c28;--art-accent:#d8693f;--art-card:#fffaf0;
+      --art-border:#3b2c28;--art-line:rgba(59,44,40,.22);--art-title-font:"Noto Sans TC",sans-serif;
+      border:4px solid #3b2c28;
+      box-shadow:8px 8px 0 rgba(59,44,40,.18);
+      background-color:#fffaf0;
+      background-image:repeating-radial-gradient(circle at 50% 50%,transparent 0,transparent 22px,rgba(230,122,78,.05) 22px,rgba(230,122,78,.05) 24px);
+    }
+    .export-card[data-style="clay"]{
+      --art-bg:#f3f1ff;--art-fg:#26233a;--art-accent:#7c3aed;--art-card:#f3f1ff;
+      --art-border:transparent;--art-line:rgba(38,35,58,.12);--art-title-font:"Noto Sans TC",sans-serif;
+      border:none;border-radius:30px;
+      box-shadow:18px 18px 46px #d1cde6,-18px -18px 46px #fff
+    }
+    .export-card[data-style="sticker"]{
+      --art-bg:#fff;--art-fg:#1f2933;--art-accent:#ff6b6b;--art-card:#fff;
+      --art-border:#fff;--art-line:#d9dee6;--art-title-font:"Noto Sans TC",sans-serif;
+      border:11px solid #fff;outline:2px dashed #e5e7eb;outline-offset:-6px;
+      box-shadow:0 24px 48px -12px rgba(0,0,0,.24);
+      transform:rotate(-.35deg)
+    }
+    .export-card[data-style="baroque"]{
+      --art-bg:#f7f2ea;--art-fg:#2b1b18;--art-accent:#b8860b;--art-card:#fbf5e9;
+      --art-border:#b8860b;--art-line:rgba(184,134,11,.24);--art-title-font:"Noto Serif TC",serif;
+      border:2px solid #b8860b;
+      box-shadow:inset 0 0 0 4px #fbf5e9,inset 0 0 0 6px #b8860b,0 20px 40px rgba(0,0,0,.16)
+    }
+    .export-card[data-style="baroque"]::before,
+    .export-card[data-style="baroque"]::after{
+      content:"❧";position:absolute;color:#b8860b;font-size:30px;opacity:.58;z-index:-1
+    }
+    .export-card[data-style="baroque"]::before{top:10px;left:16px}
+    .export-card[data-style="baroque"]::after{right:16px;bottom:10px;transform:rotate(180deg)}
+    .export-card[data-style="tech"]{
+      --art-bg:#050816;--art-fg:#e5e7eb;--art-accent:#38bdf8;--art-card:#0b1220;
+      --art-border:rgba(56,189,248,.34);--art-line:rgba(56,189,248,.24);--art-title-font:system-ui,sans-serif;
+      background-color:#0b1220;
+      background-image:
+        linear-gradient(rgba(56,189,248,.055) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(56,189,248,.055) 1px,transparent 1px);
+      background-size:20px 20px;
+      border:1px solid rgba(56,189,248,.34);
+      box-shadow:inset 0 0 24px rgba(56,189,248,.055),0 0 24px rgba(56,189,248,.10)
+    }
+    .export-card[data-style="tech"]::before{
+      content:"";position:absolute;top:-1px;left:-1px;width:25px;height:25px;
+      border-top:2px solid #38bdf8;border-left:2px solid #38bdf8;z-index:3
+    }
+    .export-card[data-style="tech"]::after{
+      content:"";position:absolute;right:-1px;bottom:-1px;width:25px;height:25px;
+      border-right:2px solid #38bdf8;border-bottom:2px solid #38bdf8;z-index:3
+    }
+
+    .logic-root{text-align:center;margin-bottom:30px}
+    .logic-root-title{
+      display:inline-flex;flex-direction:column;align-items:center;gap:7px;
+      padding:12px 24px;border:1px solid var(--art-accent);
+      background:color-mix(in srgb,var(--art-card) 86%,var(--art-accent) 14%);
+      border-radius:12px
+    }
+    .logic-root-title .label{font-size:.72em;opacity:.68;text-transform:uppercase;letter-spacing:.06em}
+    .logic-root-title .text{
+      font-family:var(--art-title-font);
+      font-size:1.2em;font-weight:800;line-height:1.4;
+      min-width:140px;min-height:1.4em
+    }
+    .logic-root-sub{margin:11px auto 0;font-size:.86em;opacity:.74;line-height:1.6;max-width:680px;min-height:1.6em}
+
+    .logic-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:20px}
+    .logic-node{
+      position:relative;padding:16px;border-radius:12px;
+      border:1px solid var(--art-border);
+      background:color-mix(in srgb,var(--art-card) 88%,white 12%);
+      min-width:0
+    }
+    .export-card[data-style="tech"] .logic-node{background:rgba(11,18,32,.82)}
+    .export-card[data-style="clay"] .logic-node{
+      background:#f3f1ff;border:none;
+      box-shadow:5px 5px 10px #d1cde6,-5px -5px 10px #fff
+    }
+    .logic-node-title{
+      font-size:.95em;font-weight:800;margin-bottom:10px;
+      display:flex;align-items:flex-start;gap:8px;line-height:1.4;min-height:1.4em
+    }
+    .logic-node-title::before{
+      content:"";width:10px;height:10px;border-radius:999px;
+      background:var(--art-accent);flex:0 0 auto;margin-top:.23em
+    }
+    .logic-node-body{font-size:.85em;line-height:1.62;opacity:.88;min-height:64px}
+    .logic-node-body ul,.logic-node-body ol{margin:4px 0 0;padding-left:20px}
+    .logic-node-body li{margin:4px 0}
+    .logic-lines{
+      margin-top:30px;padding-top:16px;border-top:1px dashed var(--art-line);
+      display:flex;flex-wrap:wrap;gap:10px;justify-content:center
+    }
+    .logic-tag{
+      padding:6px 12px;border:1px solid var(--art-line);border-radius:999px;
+      background:var(--art-card);font-size:.84em;line-height:1.4
+    }
+
+    .editable{
+      cursor:text;
+      border-radius:6px;
+      transition:background .12s ease,box-shadow .12s ease
+    }
+    .editable:hover{background:color-mix(in srgb,var(--art-accent) 8%,transparent)}
+    .editable:focus{
+      outline:2px solid color-mix(in srgb,var(--art-accent) 55%,transparent);
+      outline-offset:3px;background:color-mix(in srgb,var(--art-accent) 8%,transparent)
+    }
+    .node-toolbar{
+      position:absolute;top:7px;right:7px;display:flex;gap:4px;opacity:0;
+      transition:opacity .15s ease
+    }
+    .logic-node:hover .node-toolbar,.logic-node:focus-within .node-toolbar{opacity:1}
+    .mini-delete{
+      width:30px;height:30px;border-radius:9px;border:1px solid var(--art-line);
+      background:var(--art-card);color:var(--art-fg);cursor:pointer
+    }
+
+    .style-grid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px
+    }
+    .style-card{
+      border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-card);
+      padding:14px;text-align:left;color:var(--ui-fg);cursor:pointer;min-height:128px
+    }
+    .style-card.active{border:2px solid var(--ui-accent);box-shadow:0 0 0 3px var(--ui-accent-soft)}
+    .style-preview{
+      height:62px;border-radius:12px;margin-bottom:12px;border:1px solid rgba(0,0,0,.08);
+      position:relative;overflow:hidden
+    }
+    .style-preview::after{
+      content:"核心 → 結構 → 方法";position:absolute;inset:0;
+      display:grid;place-items:center;font-size:.73rem;font-weight:800
+    }
+    .p-zen{background:radial-gradient(circle at 80% 20%,#dfe8d9,transparent 38%),#fbf8f2;color:#2f2a25}
+    .p-ink{background:#fdfbf7;color:#222;border:2px solid #222}
+    .p-showa{background:repeating-radial-gradient(circle,#fffaf0 0,#fffaf0 12px,#f9e4d8 13px,#fffaf0 14px);color:#3b2c28;border:3px solid #3b2c28}
+    .p-clay{background:#f3f1ff;color:#5b21b6;box-shadow:inset 7px 7px 14px #d1cde6,inset -7px -7px 14px #fff}
+    .p-sticker{background:#fff;color:#ff6b6b;outline:2px dashed #d1d5db;outline-offset:-6px}
+    .p-baroque{background:#fbf5e9;color:#8a6408;border:3px double #b8860b}
+    .p-tech{background-color:#0b1220;background-image:linear-gradient(rgba(56,189,248,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.12) 1px,transparent 1px);background-size:12px 12px;color:#38bdf8;border:1px solid #38bdf8}
+    .style-card strong{display:block}
+    .style-card small{display:block;color:var(--ui-muted);margin-top:4px;line-height:1.45}
+
+    .export-actions{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px
+    }
+    .export-big{
+      min-height:112px;border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-card);
+      color:var(--ui-fg);cursor:pointer;text-align:left;padding:18px
+    }
+    .export-big.primary{background:var(--ui-accent);color:white;border-color:var(--ui-accent)}
+    .export-big .ico{font-size:1.7rem;display:block;margin-bottom:10px}
+    .export-big strong{display:block}
+    .export-big small{display:block;margin-top:5px;opacity:.78;line-height:1.4}
+
+    .check-list{display:grid;gap:9px}
+    .check-item{
+      display:flex;align-items:flex-start;gap:10px;padding:11px 12px;
+      border:1px solid var(--ui-line);border-radius:12px;background:var(--ui-card-2);
+      font-size:.85rem;line-height:1.5
+    }
+    .check-item .ok{color:var(--ui-success);font-weight:900}
+
+    .data-grid{display:grid;gap:12px}
+    .data-card{
+      border:1px solid var(--ui-line);border-radius:18px;background:var(--ui-card);
+      padding:16px
+    }
+    .data-card h3{margin:0 0 6px;font-size:1rem}
+    .data-card p{margin:0 0 14px;color:var(--ui-muted);font-size:.85rem;line-height:1.55}
+
+    .guide-quick{
+      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px
+    }
+    .guide-quick div{
+      background:var(--ui-card);border:1px solid var(--ui-line);border-radius:14px;padding:12px;text-align:center
+    }
+    .guide-quick b{display:block;font-size:1.2rem;color:var(--ui-accent)}
+    .guide-quick span{font-size:.75rem;color:var(--ui-muted)}
+    .guide-list{display:grid;gap:12px}
+    details.guide{
+      border:1px solid var(--ui-line);border-radius:16px;background:var(--ui-card);overflow:hidden
+    }
+    details.guide summary{
+      list-style:none;cursor:pointer;padding:16px;font-weight:800;display:flex;align-items:center;gap:10px
+    }
+    details.guide summary::-webkit-details-marker{display:none}
+    details.guide[open] summary{border-bottom:1px solid var(--ui-line)}
+    .guide-body{padding:15px 16px;color:var(--ui-muted);line-height:1.75;font-size:.88rem}
+    .guide-body ol,.guide-body ul{margin:.2em 0;padding-left:1.4em}
+    .guide-body li{margin:.45em 0}
+    .tip{
+      margin-top:10px;padding:11px 12px;border-left:4px solid var(--ui-accent);
+      border-radius:10px;background:var(--ui-accent-soft);color:var(--ui-fg)
+    }
+
+    .bottom-nav{
+      position:fixed;left:50%;bottom:calc(10px + var(--safe-bottom));
+      transform:translateX(-50%);
+      width:min(calc(100% - 24px - var(--safe-left) - var(--safe-right)),680px);
+      z-index:70;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;
+      padding:7px;border:1px solid var(--ui-line);border-radius:18px;
+      background:color-mix(in srgb,var(--ui-card) 92%,transparent);
+      backdrop-filter:blur(16px);box-shadow:0 14px 36px rgba(15,23,42,.16)
+    }
+    .bottom-nav button{
+      min-height:50px;border:none;border-radius:12px;background:transparent;color:var(--ui-muted);
+      cursor:pointer;font-size:.72rem;font-weight:700
+    }
+    .bottom-nav button span{display:block;font-size:1.15rem;margin-bottom:2px}
+    .bottom-nav button.active{background:var(--ui-accent-soft);color:var(--ui-accent)}
+
+    .toast{
+      position:fixed;left:50%;bottom:calc(82px + var(--safe-bottom));
+      transform:translate(-50%,14px);
+      z-index:200;max-width:min(90vw,520px);
+      padding:11px 16px;border-radius:999px;background:#111827;color:#fff;
+      font-size:.84rem;opacity:0;pointer-events:none;transition:.2s ease;
+      box-shadow:0 10px 28px rgba(0,0,0,.22);text-align:center
+    }
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+
+    .modal-backdrop{
+      position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.45);
+      display:none;align-items:flex-end;justify-content:center;padding:16px
+    }
+    .modal-backdrop.open{display:flex}
+    .modal{
+      width:min(100%,520px);background:var(--ui-card);color:var(--ui-fg);
+      border:1px solid var(--ui-line);border-radius:22px;padding:18px;
+      box-shadow:0 24px 80px rgba(0,0,0,.3)
+    }
+    .modal h3{margin:0 0 8px}
+    .modal p{margin:0;color:var(--ui-muted);line-height:1.6;font-size:.88rem}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px}
+
+    .hidden-input{display:none!important}
+    .offline-clone{
+      position:fixed!important;left:-10000px!important;top:0!important;
+      width:820px!important;max-width:none!important;
+      transform:none!important;z-index:-9999!important
+    }
+    .offline-clone .node-toolbar{display:none!important}
+
+    @media (max-width:760px){
+      .app-shell{padding-left:calc(12px + var(--safe-left));padding-right:calc(12px + var(--safe-right))}
+      .main-grid,.style-grid,.export-actions{grid-template-columns:1fr}
+      .main-key{min-height:112px}
+      .guide-quick{grid-template-columns:repeat(2,1fr)}
+      .export-card{padding:30px 18px;min-height:460px;border-radius:18px}
+      .logic-grid{grid-template-columns:1fr}
+      .logic-node{padding:15px}
+      .node-toolbar{opacity:1}
+      .topbar-title span{display:none}
+    }
+
+    @media (max-width:420px){
+      .top-actions{gap:5px}
+      .icon-btn{min-width:44px;height:44px}
+      .topbar{gap:7px}
+      .bottom-nav button{font-size:.68rem}
+    }
+
+    @media print{
+      @page{margin:12mm}
+      html,body{background:#fff!important}
+      body *{visibility:hidden!important}
+      #exportArea,#exportArea *{visibility:visible!important}
+      #exportArea{
+        position:absolute!important;left:0!important;top:0!important;
+        width:100%!important;max-width:none!important;
+        min-height:auto!important;box-shadow:none!important;
+        transform:none!important;margin:0!important;
+        -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important
+      }
+      #exportArea .node-toolbar{display:none!important}
+      *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    }
+
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar" aria-label="工具列">
+      <button class="back-btn" id="backBtn" aria-label="回首頁" title="回首頁" hidden>←</button>
+      <div class="topbar-title">
+        <strong id="topTitle">邏輯圖建構工具</strong>
+        <span id="topSub">v3.0 小白友善實測版</span>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" id="themeBtn" aria-label="切換明暗模式" title="明暗模式">◐</button>
+        <button class="icon-btn font-btn" id="fontBtn" aria-label="調整字體大小" title="字體大小">A</button>
+      </div>
+    </header>
+
+    <!-- HOME -->
+    <main class="screen active" id="screen-home" data-title="邏輯圖建構工具" data-sub="v3.0 小白友善實測版">
+      <section class="hero">
+        <span class="eyebrow">✨ 3 步完成一張邏輯圖</span>
+        <h1>先寫內容，再選風格，最後輸出。</h1>
+        <p>不需要懂設計或程式。所有內容會自動保存在這台裝置的瀏覽器中。</p>
+        <div class="status-row">
+          <span class="status-chip"><span class="status-dot"></span><span id="homeSaveText">自動保存已開啟</span></span>
+          <span class="status-chip">🎨 目前風格：<b id="homeStyleName">禪風</b></span>
+          <span class="status-chip">🧩 節點：<b id="homeNodeCount">3</b></span>
+        </div>
+      </section>
+
+      <section class="main-grid" aria-label="四大主功能">
+        <button class="main-key" data-go="editor">
+          <span class="ico">✍️</span>
+          <strong>編輯內容</strong>
+          <small>直接點文字修改，也可新增／刪除區塊。</small>
+        </button>
+        <button class="main-key" data-go="style">
+          <span class="ico">🎨</span>
+          <strong>選擇風格</strong>
+          <small>禪風、水墨、昭和、黏土、貼紙、巴洛克、科技。</small>
+        </button>
+        <button class="main-key" data-go="export">
+          <span class="ico">📤</span>
+          <strong>輸出成品</strong>
+          <small>匯出高清 PNG，或列印／另存成 PDF。</small>
+        </button>
+        <button class="main-key" data-go="guide">
+          <span class="ico">🧭</span>
+          <strong>操作指南</strong>
+          <small>完全不熟也沒關係，照著步驟做即可。</small>
+        </button>
+      </section>
+
+      <div class="secondary-row">
+        <button class="secondary-action" data-go="data">💾 資料管理</button>
+        <button class="secondary-action" id="quickSampleBtn">🪄 載入示範</button>
+      </div>
+    </main>
+
+    <!-- EDITOR -->
+    <main class="screen" id="screen-editor" data-title="編輯內容" data-sub="點文字直接修改，自動保存">
+      <div class="section-head">
+        <h2>✍️ 編輯內容</h2>
+        <p>只要點選卡片中的文字即可修改。完成後不用按儲存。</p>
+      </div>
+
+      <section class="panel">
+        <div class="panel-title">
+          <strong>編輯工具</strong>
+          <span class="save-indicator" id="saveIndicator">已保存</span>
+        </div>
+        <div class="toolbar">
+          <button class="tool-btn" id="addNodeBtn">＋ 新增區塊</button>
+          <button class="tool-btn" id="addTagBtn">＋ 新增標籤</button>
+          <button class="tool-btn" id="sampleBtn">🪄 載入示範</button>
+        </div>
+        <div class="hint">提示：標題、說明、區塊內容與下方標籤都可以直接點擊修改。最多 6 個主要區塊。</div>
+      </section>
+
+      <div class="workspace-host" id="workspaceHostEditor"></div>
+    </main>
+
+    <!-- STYLE -->
+    <main class="screen" id="screen-style" data-title="選擇風格" data-sub="只改外觀，不會改文字內容">
+      <div class="section-head">
+        <h2>🎨 選擇風格</h2>
+        <p>點一下就套用。文字內容不會被改掉。</p>
+      </div>
+
+      <section class="style-grid" id="styleGrid">
+        <button class="style-card" data-style="zen">
+          <div class="style-preview p-zen"></div><strong>禪風</strong><small>柔和、留白、適合知識整理與人生主題。</small>
+        </button>
+        <button class="style-card" data-style="ink">
+          <div class="style-preview p-ink"></div><strong>水墨</strong><small>宣紙與印章感，適合東方文化與古典內容。</small>
+        </button>
+        <button class="style-card" data-style="showa">
+          <div class="style-preview p-showa"></div><strong>昭和</strong><small>復古海報感，對比鮮明、帶年代氣氛。</small>
+        </button>
+        <button class="style-card" data-style="clay">
+          <div class="style-preview p-clay"></div><strong>黏土</strong><small>柔軟 3D 質感，適合親和教學與可愛主題。</small>
+        </button>
+        <button class="style-card" data-style="sticker">
+          <div class="style-preview p-sticker"></div><strong>貼紙</strong><small>活潑、簡單、適合社群圖卡與日常分享。</small>
+        </button>
+        <button class="style-card" data-style="baroque">
+          <div class="style-preview p-baroque"></div><strong>巴洛克</strong><small>金色秩序與古典感，適合高端與正式主題。</small>
+        </button>
+        <button class="style-card" data-style="tech">
+          <div class="style-preview p-tech"></div><strong>科技</strong><small>深色網格與 HUD 感，適合 AI、科技與工程內容。</small>
+        </button>
+      </section>
+    </main>
+
+    <!-- EXPORT -->
+    <main class="screen" id="screen-export" data-title="輸出成品" data-sub="PNG 圖片或列印／PDF">
+      <div class="section-head">
+        <h2>📤 輸出成品</h2>
+        <p>先看預覽，確認內容後再選擇輸出方式。</p>
+      </div>
+
+      <section class="panel">
+        <div class="panel-title"><strong>輸出前檢查</strong><span class="hint">自動檢查</span></div>
+        <div class="check-list" id="exportChecks"></div>
+      </section>
+
+      <div class="workspace-host" id="workspaceHostExport"></div>
+
+      <section class="export-actions">
+        <button class="export-big primary" id="exportPngBtn">
+          <span class="ico">🖼️</span>
+          <strong>匯出高清 PNG</strong>
+          <small>適合 LINE、簡報、社群或圖片保存。</small>
+        </button>
+        <button class="export-big" id="printPdfBtn">
+          <span class="ico">🖨️</span>
+          <strong>列印／另存 PDF</strong>
+          <small>瀏覽器列印視窗中選「另存為 PDF」。</small>
+        </button>
+      </section>
+
+      <p class="hint" style="margin-top:12px">
+        PNG 功能需要網路載入 html2canvas。若出現「PNG 模組未載入」，請確認網路後重新整理本頁。
+      </p>
+    </main>
+
+    <!-- DATA -->
+    <main class="screen" id="screen-data" data-title="資料管理" data-sub="備份、還原與重置">
+      <div class="section-head">
+        <h2>💾 資料管理</h2>
+        <p>想換手機、換瀏覽器或做版本備份時，先匯出 JSON。</p>
+      </div>
+
+      <div class="data-grid">
+        <section class="data-card">
+          <h3>📥 匯出備份</h3>
+          <p>把目前文字、節點、標籤與風格存成一個 JSON 檔。</p>
+          <button class="primary-btn wide" id="exportJsonBtn">匯出 JSON 備份</button>
+        </section>
+
+        <section class="data-card">
+          <h3>📤 匯入備份</h3>
+          <p>選擇本工具匯出的 JSON。匯入前會先檢查格式並清理危險內容。</p>
+          <button class="tool-btn wide" id="importJsonBtn">選擇 JSON 檔案</button>
+          <input id="jsonFileInput" class="hidden-input" type="file" accept=".json,application/json" />
+        </section>
+
+        <section class="data-card">
+          <h3>🧪 相容舊版 v2.0</h3>
+          <p>若同一個瀏覽器內仍有 <code>logicMapData_v2</code>，本版首次開啟會嘗試自動轉換成 v3.0。</p>
+          <button class="tool-btn wide" id="migrateBtn">重新檢查 v2 舊資料</button>
+        </section>
+
+        <section class="data-card">
+          <h3 style="color:var(--ui-danger)">🗑️ 全部重置</h3>
+          <p>刪除本機保存內容並恢復預設示範。此操作無法復原，建議先匯出 JSON。</p>
+          <button class="danger-btn wide" id="resetBtn">清空並恢復預設</button>
+        </section>
+      </div>
+    </main>
+
+    <!-- GUIDE -->
+    <main class="screen" id="screen-guide" data-title="操作指南" data-sub="小白完整全功能說明">
+      <div class="section-head">
+        <h2>🧭 小白全功能操作指南</h2>
+        <p>第一次使用只要記住：編輯 → 風格 → 輸出。</p>
+      </div>
+
+      <div class="guide-quick" aria-label="四步快速流程">
+        <div><b>1</b><span>編輯文字</span></div>
+        <div><b>2</b><span>選擇風格</span></div>
+        <div><b>3</b><span>確認預覽</span></div>
+        <div><b>4</b><span>PNG / PDF</span></div>
+      </div>
+
+      <div class="guide-list">
+        <details class="guide" open>
+          <summary>① 第一次使用：60 秒完成第一張圖</summary>
+          <div class="guide-body">
+            <ol>
+              <li>首頁按 <b>「編輯內容」</b>。</li>
+              <li>直接點「核心命題」、三個區塊標題、內文或下方標籤，改成自己的內容。</li>
+              <li>回首頁或底部按 <b>「風格」</b>，選一種喜歡的樣式。</li>
+              <li>按 <b>「輸出」</b>，確認預覽，再選「高清 PNG」或「列印／PDF」。</li>
+            </ol>
+            <div class="tip">不需要另外按儲存：停止輸入約 0.35 秒後會自動保存。</div>
+          </div>
+        </details>
+
+        <details class="guide">
+          <summary>② 如何修改文字、增加區塊與標籤？</summary>
+          <div class="guide-body">
+            <ul>
+              <li><b>修改：</b>直接點任何可編輯文字後輸入。</li>
+              <li><b>新增主要區塊：</b>到「編輯內容」頁按「＋ 新增區塊」。最多 6 個。</li>
+              <li><b>刪除區塊：</b>區塊右上角按「×」。至少保留 1 個區塊。</li>
+              <li><b>新增標籤：</b>按「＋ 新增標籤」，新標籤會出現在邏輯圖下方。</li>
+              <li><b>刪除標籤：</b>把該標籤文字全部刪空，再點到其他地方，系統會自動移除空標籤。</li>
+            </ul>
+            <div class="tip">若想快速測試，可按「🪄 載入示範」。</div>
+          </div>
+        </details>
+
+        <details class="guide">
+          <summary>③ 7 種風格怎麼選？</summary>
+          <div class="guide-body">
+            <ul>
+              <li><b>禪風：</b>知識整理、人生觀、身心主題。</li>
+              <li><b>水墨：</b>古文、東方哲學、文化內容。</li>
+              <li><b>昭和：</b>復古宣傳、歷史回顧、懷舊主題。</li>
+              <li><b>黏土：</b>親子、長輩、衛教、友善教學。</li>
+              <li><b>貼紙：</b>社群、簡單分享、可愛圖卡。</li>
+              <li><b>巴洛克：</b>正式、高端、品牌提案。</li>
+              <li><b>科技：</b>AI、工程、流程、系統架構。</li>
+            </ul>
+            <div class="tip">切換風格只會改外觀，不會改掉你已輸入的內容。</div>
+          </div>
+        </details>
+
+        <details class="guide">
+          <summary>④ 如何輸出 PNG 圖片？</summary>
+          <div class="guide-body">
+            <ol>
+              <li>進入「輸出」頁。</li>
+              <li>確認「輸出前檢查」沒有明顯缺漏。</li>
+              <li>按 <b>「匯出高清 PNG」</b>。</li>
+              <li>瀏覽器會自動建立 2 倍解析度圖片並下載。</li>
+            </ol>
+            <div class="tip">PNG 依賴網路載入 html2canvas。若首次開啟時沒有網路，請連網後重新整理。</div>
+          </div>
+        </details>
+
+        <details class="guide">
+          <summary>⑤ 如何存成 PDF 或列印？</summary>
+          <div class="guide-body">
+            <ol>
+              <li>進入「輸出」頁，按 <b>「列印／另存 PDF」</b>。</li>
+              <li>電腦 Chrome：目的地選「另存為 PDF」。</li>
+              <li>Android：列印畫面通常可選「儲存為 PDF」。</li>
+              <li>若背景圖案沒有顯示，請在列印設定開啟「背景圖形／背景顏色」。</li>
+            </ol>
+          </div>
+        </details>
+
+        <details class="guide">
+          <summary>⑥ JSON 備份與還原是做什麼？</summary>
+          <div class="guide-body">
+            <ul>
+              <li><b>匯出 JSON：</b>把目前作品保存成可還原的設定檔。</li>
+              <li><b>匯入 JSON：</b>換瀏覽器或換裝置後，把設定檔重新載回。</li>
+              <li>本版會檢查版本、節點數量與內容型態，並清除危險 HTML 屬性。</li>
+            </ul>
+            <div class="tip">JSON 是「作品備份」，PNG/PDF 是「成品輸出」，用途不同。</div>
+          </div>
+        </details>
+
+        <details class="guide">
+          <summary>⑦ 明暗模式與字體大小</summary>
+          <div class="guide-body">
+            <ul>
+              <li>右上角 <b>◐</b>：依序切換「跟隨系統 → 明亮 → 深色」。</li>
+              <li>右上角 <b>A</b>：依序切換「標準 → 大字 → 特大字」。</li>
+              <li>設定會自動保存在目前瀏覽器。</li>
+            </ul>
+            <div class="tip">明暗模式只調整操作介面；作品的 7 種輸出風格仍維持原本設計。</div>
+          </div>
+        </details>
+
+        <details class="guide">
+          <summary>⑧ 常見問題排除</summary>
+          <div class="guide-body">
+            <ul>
+              <li><b>PNG 沒反應：</b>確認網路，重新整理後再試。</li>
+              <li><b>匯入 JSON 失敗：</b>確認檔案是由本工具匯出，且沒有被文字編輯器破壞格式。</li>
+              <li><b>文字跑版：</b>縮短單一標籤文字，或減少主要區塊數量。</li>
+              <li><b>手機畫面太小：</b>按右上 A 切回標準字體，輸出 PNG 時仍會用固定 820px 畫布生成高清圖。</li>
+              <li><b>想完全重來：</b>到「資料管理」→「清空並恢復預設」。</li>
+            </ul>
+          </div>
+        </details>
+      </div>
+    </main>
+
+    <nav class="bottom-nav" id="bottomNav" aria-label="主要導覽">
+      <button data-go="editor"><span>✍️</span>編輯</button>
+      <button data-go="style"><span>🎨</span>風格</button>
+      <button data-go="export"><span>📤</span>輸出</button>
+      <button data-go="guide"><span>🧭</span>指南</button>
+    </nav>
+  </div>
+
+  <!-- 單一共用作品卡：依頁面移動到編輯或輸出頁 -->
+  <section class="export-card" id="exportArea" data-style="zen" aria-label="邏輯圖作品" hidden>
+    <div class="logic-root">
+      <div class="logic-root-title">
+        <div class="label">核心命題 Core Thesis</div>
+        <div class="text editable" id="rootTitle" contenteditable="true" role="textbox" aria-label="核心命題">師者，所以傳道受業解惑也</div>
+      </div>
+      <div class="logic-root-sub editable" id="rootSub" contenteditable="true" role="textbox" aria-label="核心說明">
+        可替換為任何文章的中心句，例如：產品主張、論文命題、故事主題。
+      </div>
+    </div>
+    <div class="logic-grid" id="logicGrid"></div>
+    <div class="logic-lines" id="logicLines"></div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="modal-backdrop" id="confirmModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <h3 id="confirmTitle">確認操作</h3>
+      <p id="confirmText">確定要繼續嗎？</p>
+      <div class="modal-actions">
+        <button class="tool-btn" id="confirmCancel">取消</button>
+        <button class="danger-btn" id="confirmOk">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const STORAGE_KEY = "logicMapData_v3";
+    const LEGACY_KEY = "logicMapData_v2";
+    const PREF_KEY = "logicMapPrefs_v3";
+    const MAX_NODES = 6;
+
+    const STYLE_NAMES = {
+      zen:"禪風", ink:"水墨", showa:"昭和", clay:"黏土",
+      sticker:"貼紙", baroque:"巴洛克", tech:"科技"
+    };
+
+    const DEFAULT_DATA = {
+      version: 3,
+      style: "zen",
+      rootTitle: "師者，所以傳道受業解惑也",
+      rootSub: "可替換為任何文章的中心句，例如：產品主張、論文命題、故事主題。",
+      nodes: [
+        { id:"n1", title:"一、定義與本質", body:"<ul><li>界定核心功能與背景。</li><li>說明為何必須解決此問題。</li><li>概念定義與問題陳述。</li></ul>" },
+        { id:"n2", title:"二、問題與對比", body:"<ul><li>理想與現況的落差。</li><li>結構性問題或痛點分析。</li><li>風險說明或反面論證。</li></ul>" },
+        { id:"n3", title:"三、原則與方法", body:"<ul><li>具體解法與行動策略。</li><li>資源分配與專業分工。</li><li>可落地的 SOP 概要。</li></ul>" }
+      ],
+      tags: [
+        "有惑 → 必須從師",
+        "擇師標準：道之所存",
+        "古今對比 → 聖益聖，愚益愚",
+        "聞道先後｜術業專攻"
+      ],
+      updatedAt: new Date().toISOString()
+    };
+
+    const SAMPLE_DATA = {
+      version:3,
+      style:"tech",
+      rootTitle:"AI Agent 如何從任務走到自動執行",
+      rootSub:"把複雜系統拆成「理解目標 → 規劃工具 → 執行驗證 → 回饋修正」四個可觀察步驟。",
+      nodes:[
+        {id:"s1",title:"一、理解任務",body:"<ul><li>辨識使用者真正目標。</li><li>確認限制、資料與風險。</li><li>把模糊需求轉為明確輸入。</li></ul>"},
+        {id:"s2",title:"二、規劃與選工具",body:"<ul><li>決定是否需要搜尋、資料庫或程式工具。</li><li>拆成可驗證的小步驟。</li><li>先做安全與權限守門。</li></ul>"},
+        {id:"s3",title:"三、執行與驗證",body:"<ul><li>實際呼叫工具完成工作。</li><li>檢查結果是否符合目標。</li><li>失敗時改用備援路徑。</li></ul>"},
+        {id:"s4",title:"四、回饋與修正",body:"<ul><li>保留關鍵結果與狀態。</li><li>依新資訊重新規劃。</li><li>必要時交還使用者決策。</li></ul>"}
+      ],
+      tags:["目標 → 計畫","工具 → 執行","結果 → 驗證","錯誤 → 修正"],
+      updatedAt:new Date().toISOString()
+    };
+
+    let data = structuredCloneSafe(DEFAULT_DATA);
+    let prefs = { theme:"system", fontScale:1 };
+    let saveTimer = null;
+    let toastTimer = null;
+    let confirmResolver = null;
+    let currentScreen = "home";
+
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+    const exportArea = $("#exportArea");
+    const logicGrid = $("#logicGrid");
+    const logicLines = $("#logicLines");
+
+    function structuredCloneSafe(obj){
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function uid(){
+      return "n" + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+    }
+
+    function clampText(value, max=5000){
+      return String(value ?? "").slice(0,max);
+    }
+
+    function sanitizeRichHTML(html){
+      const template = document.createElement("template");
+      template.innerHTML = String(html ?? "");
+      const allowedTags = new Set(["UL","OL","LI","P","BR","B","STRONG","EM","I"]);
+      const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
+      const toProcess = [];
+      while(walker.nextNode()) toProcess.push(walker.currentNode);
+
+      toProcess.forEach(el => {
+        if(!allowedTags.has(el.tagName)){
+          const parent = el.parentNode;
+          if(!parent) return;
+          while(el.firstChild) parent.insertBefore(el.firstChild, el);
+          parent.removeChild(el);
+          return;
+        }
+        [...el.attributes].forEach(attr => el.removeAttribute(attr.name));
+      });
+      return template.innerHTML.slice(0,12000);
+    }
+
+    function sanitizeImportedData(input){
+      if(!input || typeof input !== "object") throw new Error("JSON 根層必須是物件");
+
+      // 接受 v3 結構
+      if(Array.isArray(input.nodes)){
+        const safeNodes = input.nodes.slice(0,MAX_NODES).map((n,i) => ({
+          id: clampText(n?.id || uid(), 80),
+          title: clampText(n?.title || `區塊 ${i+1}`, 300),
+          body: sanitizeRichHTML(n?.body || "<ul><li>請輸入內容</li></ul>")
+        }));
+
+        if(!safeNodes.length) safeNodes.push(structuredCloneSafe(DEFAULT_DATA.nodes[0]));
+
+        return {
+          version:3,
+          style: STYLE_NAMES[input.style] ? input.style : "zen",
+          rootTitle: clampText(input.rootTitle || DEFAULT_DATA.rootTitle, 500),
+          rootSub: clampText(input.rootSub || "", 1200),
+          nodes:safeNodes,
+          tags:Array.isArray(input.tags) ? input.tags.slice(0,20).map(t => clampText(stripHTML(t),300)).filter(Boolean) : [],
+          updatedAt:new Date().toISOString()
+        };
+      }
+
+      // 接受 v2 舊結構
+      if("node1Title" in input || "node1Body" in input || "rootTitle" in input){
+        return convertLegacyV2(input);
+      }
+
+      throw new Error("找不到可辨識的邏輯圖資料");
+    }
+
+    function stripHTML(html){
+      const div = document.createElement("div");
+      div.innerHTML = String(html ?? "");
+      return div.textContent || "";
+    }
+
+    function extractLegacyRootTitle(value){
+      const div = document.createElement("div");
+      div.innerHTML = String(value ?? "");
+      const specific = div.querySelector(".text");
+      return (specific ? specific.textContent : div.textContent || "").trim();
+    }
+
+    function convertLegacyV2(old){
+      const nodes = [];
+      for(let i=1;i<=3;i++){
+        const title = stripHTML(old[`node${i}Title`] || "");
+        const body = sanitizeRichHTML(old[`node${i}Body`] || "");
+        if(title || stripHTML(body).trim()){
+          nodes.push({id:uid(),title:title || `區塊 ${i}`,body:body || "<ul><li>請輸入內容</li></ul>"});
+        }
+      }
+      return {
+        version:3,
+        style:STYLE_NAMES[old.style] ? old.style : "zen",
+        rootTitle:extractLegacyRootTitle(old.rootTitle || DEFAULT_DATA.rootTitle).slice(0,500) || DEFAULT_DATA.rootTitle,
+        rootSub:stripHTML(old.rootSub || "").trim().slice(0,1200),
+        nodes:nodes.length ? nodes : structuredCloneSafe(DEFAULT_DATA.nodes),
+        tags:Array.isArray(old.tags) ? old.tags.map(t => stripHTML(t).trim().slice(0,300)).filter(Boolean).slice(0,20) : [],
+        updatedAt:new Date().toISOString()
+      };
+    }
+
+    function loadPrefs(){
+      try{
+        const saved = JSON.parse(localStorage.getItem(PREF_KEY) || "{}");
+        if(["system","light","dark"].includes(saved.theme)) prefs.theme = saved.theme;
+        if([1,1.15,1.3].includes(saved.fontScale)) prefs.fontScale = saved.fontScale;
+      }catch(_){}
+      applyPrefs();
+    }
+
+    function applyPrefs(){
+      document.documentElement.dataset.theme = prefs.theme;
+      document.documentElement.style.setProperty("--font-scale", prefs.fontScale);
+      const themeIcon = prefs.theme === "light" ? "☀️" : prefs.theme === "dark" ? "🌙" : "◐";
+      $("#themeBtn").textContent = themeIcon;
+      $("#fontBtn").textContent = prefs.fontScale === 1 ? "A" : prefs.fontScale === 1.15 ? "A+" : "A++";
+      localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+    }
+
+    function loadData(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+          data = sanitizeImportedData(JSON.parse(raw));
+          renderAll();
+          return;
+        }
+      }catch(err){
+        console.warn("v3 載入失敗：", err);
+      }
+
+      // 首次啟動時嘗試舊版自動轉換
+      if(tryMigrateLegacy(false)) return;
+
+      data = structuredCloneSafe(DEFAULT_DATA);
+      renderAll();
+      saveNow();
+    }
+
+    function tryMigrateLegacy(showMessage=true){
+      try{
+        const legacyRaw = localStorage.getItem(LEGACY_KEY);
+        if(!legacyRaw){
+          if(showMessage) showToast("找不到 v2 舊資料");
+          return false;
+        }
+        const converted = sanitizeImportedData(JSON.parse(legacyRaw));
+        data = converted;
+        renderAll();
+        saveNow();
+        if(showMessage) showToast("✅ 已把 v2 資料轉換成 v3");
+        return true;
+      }catch(err){
+        console.warn(err);
+        if(showMessage) showToast("❌ v2 資料無法轉換");
+        return false;
+      }
+    }
+
+    function captureDOMToData(){
+      data.rootTitle = clampText($("#rootTitle").textContent.trim(),500) || "未命名核心命題";
+      data.rootSub = clampText($("#rootSub").textContent.trim(),1200);
+
+      data.nodes = $$(".logic-node", logicGrid).map((node,i) => ({
+        id:node.dataset.id || uid(),
+        title:clampText($(".logic-node-title",node).textContent.trim(),300) || `區塊 ${i+1}`,
+        body:sanitizeRichHTML($(".logic-node-body",node).innerHTML)
+      })).slice(0,MAX_NODES);
+
+      data.tags = $$(".logic-tag",logicLines)
+        .map(el => clampText(el.textContent.trim(),300))
+        .filter(Boolean)
+        .slice(0,20);
+
+      data.style = STYLE_NAMES[exportArea.dataset.style] ? exportArea.dataset.style : "zen";
+      data.updatedAt = new Date().toISOString();
+    }
+
+    function scheduleSave(){
+      $("#saveIndicator")?.classList.add("saving");
+      if($("#saveIndicator")) $("#saveIndicator").textContent = "保存中…";
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(saveNow,350);
+    }
+
+    function saveNow(){
+      captureDOMToData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      const indicator = $("#saveIndicator");
+      if(indicator){
+        indicator.classList.remove("saving");
+        indicator.textContent = "已保存";
+      }
+      updateHomeStatus();
+    }
+
+    function renderAll(){
+      exportArea.dataset.style = STYLE_NAMES[data.style] ? data.style : "zen";
+      $("#rootTitle").textContent = data.rootTitle || DEFAULT_DATA.rootTitle;
+      $("#rootSub").textContent = data.rootSub || "";
+      renderNodes();
+      renderTags();
+      updateStyleCards();
+      updateHomeStatus();
+      updateExportChecks();
+    }
+
+    function renderNodes(){
+      logicGrid.innerHTML = "";
+      data.nodes.forEach((node,index) => {
+        const article = document.createElement("article");
+        article.className = "logic-node";
+        article.dataset.id = node.id || uid();
+
+        const toolbar = document.createElement("div");
+        toolbar.className = "node-toolbar";
+        toolbar.setAttribute("aria-label","區塊工具");
+
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "mini-delete";
+        del.textContent = "×";
+        del.title = "刪除此區塊";
+        del.setAttribute("aria-label",`刪除第 ${index+1} 區塊`);
+        del.addEventListener("click", async () => {
+          if($$(".logic-node",logicGrid).length <= 1){
+            showToast("至少保留 1 個主要區塊");
+            return;
+          }
+          article.remove();
+          saveNow();
+          updateExportChecks();
+          showToast("已刪除區塊");
+        });
+        toolbar.appendChild(del);
+
+        const title = document.createElement("div");
+        title.className = "logic-node-title editable";
+        title.contentEditable = "true";
+        title.setAttribute("role","textbox");
+        title.setAttribute("aria-label",`第 ${index+1} 區塊標題`);
+        title.textContent = node.title || `區塊 ${index+1}`;
+
+        const body = document.createElement("div");
+        body.className = "logic-node-body editable";
+        body.contentEditable = "true";
+        body.setAttribute("role","textbox");
+        body.setAttribute("aria-label",`第 ${index+1} 區塊內容`);
+        body.innerHTML = sanitizeRichHTML(node.body);
+
+        article.append(toolbar,title,body);
+        logicGrid.appendChild(article);
+      });
+    }
+
+    function renderTags(){
+      logicLines.innerHTML = "";
+      (data.tags || []).forEach((tag,index) => {
+        const span = document.createElement("span");
+        span.className = "logic-tag editable";
+        span.contentEditable = "true";
+        span.setAttribute("role","textbox");
+        span.setAttribute("aria-label",`邏輯標籤 ${index+1}`);
+        span.textContent = tag;
+        logicLines.appendChild(span);
+      });
+    }
+
+    function updateHomeStatus(){
+      $("#homeStyleName").textContent = STYLE_NAMES[data.style] || "禪風";
+      $("#homeNodeCount").textContent = String(data.nodes.length || 0);
+      $("#homeSaveText").textContent = "自動保存已開啟";
+    }
+
+    function updateStyleCards(){
+      $$(".style-card").forEach(btn => {
+        const active = btn.dataset.style === data.style;
+        btn.classList.toggle("active",active);
+        btn.setAttribute("aria-pressed",String(active));
+      });
+    }
+
+    function updateExportChecks(){
+      if(!$("#exportChecks")) return;
+      captureDOMToData();
+      const checks = [
+        {ok:Boolean(data.rootTitle.trim()), text:"核心命題已有內容"},
+        {ok:data.nodes.length >= 1, text:`主要區塊：${data.nodes.length} 個`},
+        {ok:data.nodes.every(n => stripHTML(n.body).trim().length > 0), text:"每個主要區塊都有內文"},
+        {ok:data.tags.length > 0, text:`邏輯標籤：${data.tags.length} 個`}
+      ];
+      $("#exportChecks").innerHTML = checks.map(c =>
+        `<div class="check-item"><span class="ok">${c.ok ? "✓" : "!"}</span><span>${escapeHTML(c.text)}</span></div>`
+      ).join("");
+    }
+
+    function escapeHTML(str){
+      return String(str).replace(/[&<>"']/g,ch => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[ch]));
+    }
+
+    function showScreen(name){
+      if(!$("#screen-"+name)) name = "home";
+      currentScreen = name;
+
+      $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-"+name));
+      const screen = $("#screen-"+name);
+      $("#topTitle").textContent = screen.dataset.title || "邏輯圖建構工具";
+      $("#topSub").textContent = screen.dataset.sub || "";
+      $("#backBtn").hidden = name === "home";
+
+      $$("#bottomNav button").forEach(btn => btn.classList.toggle("active", btn.dataset.go === name));
+
+      if(name === "editor"){
+        moveWorkspace($("#workspaceHostEditor"));
+      }else if(name === "export"){
+        moveWorkspace($("#workspaceHostExport"));
+        updateExportChecks();
+      }else{
+        exportArea.hidden = true;
+      }
+
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+
+    function moveWorkspace(host){
+      exportArea.hidden = false;
+      host.appendChild(exportArea);
+    }
+
+    function showToast(message){
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"),2400);
+    }
+
+    function askConfirm(title,text){
+      $("#confirmTitle").textContent = title;
+      $("#confirmText").textContent = text;
+      $("#confirmModal").classList.add("open");
+      $("#confirmModal").setAttribute("aria-hidden","false");
+      return new Promise(resolve => {
+        confirmResolver = resolve;
+        setTimeout(() => $("#confirmCancel").focus(),30);
+      });
+    }
+
+    function closeConfirm(result){
+      $("#confirmModal").classList.remove("open");
+      $("#confirmModal").setAttribute("aria-hidden","true");
+      if(confirmResolver){
+        const r = confirmResolver;
+        confirmResolver = null;
+        r(result);
+      }
+    }
+
+    function addNode(){
+      captureDOMToData();
+      if(data.nodes.length >= MAX_NODES){
+        showToast(`最多 ${MAX_NODES} 個主要區塊`);
+        return;
+      }
+      data.nodes.push({
+        id:uid(),
+        title:`${toChineseNum(data.nodes.length+1)}、新增區塊`,
+        body:"<ul><li>點這裡輸入第一個重點。</li><li>再補上第二個重點。</li></ul>"
+      });
+      renderNodes();
+      saveNow();
+      showToast("已新增主要區塊");
+      setTimeout(() => {
+        const titles = $$(".logic-node-title",logicGrid);
+        titles[titles.length-1]?.focus();
+      },20);
+    }
+
+    function toChineseNum(n){
+      return ["零","一","二","三","四","五","六"][n] || String(n);
+    }
+
+    function addTag(){
+      captureDOMToData();
+      if(data.tags.length >= 20){
+        showToast("最多 20 個標籤");
+        return;
+      }
+      data.tags.push("新增標籤");
+      renderTags();
+      saveNow();
+      const tags = $$(".logic-tag",logicLines);
+      const el = tags[tags.length-1];
+      setTimeout(() => {
+        el?.focus();
+        selectAllText(el);
+      },20);
+    }
+
+    function selectAllText(el){
+      if(!el) return;
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    async function loadSample(){
+      const ok = await askConfirm("載入示範","這會覆蓋目前作品內容。若要保留現在的作品，請先匯出 JSON 備份。");
+      if(!ok) return;
+      data = structuredCloneSafe(SAMPLE_DATA);
+      renderAll();
+      saveNow();
+      showToast("✅ 已載入 AI Agent 示範");
+      showScreen("editor");
+    }
+
+    function cycleTheme(){
+      const order = ["system","light","dark"];
+      prefs.theme = order[(order.indexOf(prefs.theme)+1)%order.length];
+      applyPrefs();
+      const label = prefs.theme === "system" ? "跟隨系統" : prefs.theme === "light" ? "明亮模式" : "深色模式";
+      showToast("介面：" + label);
+    }
+
+    function cycleFont(){
+      const order = [1,1.15,1.3];
+      prefs.fontScale = order[(order.indexOf(prefs.fontScale)+1)%order.length];
+      applyPrefs();
+      const label = prefs.fontScale === 1 ? "標準字體" : prefs.fontScale === 1.15 ? "大字體" : "特大字體";
+      showToast(label);
+    }
+
+    function exportJSON(){
+      saveNow();
+      const payload = JSON.stringify(data,null,2);
+      const blob = new Blob([payload],{type:"application/json;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `邏輯圖備份_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url),1000);
+      showToast("✅ JSON 備份已匯出");
+    }
+
+    function importJSONFile(file){
+      if(!file) return;
+      if(file.size > 2 * 1024 * 1024){
+        showToast("❌ JSON 檔案過大");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async e => {
+        try{
+          const parsed = JSON.parse(String(e.target.result || ""));
+          const safe = sanitizeImportedData(parsed);
+          const ok = await askConfirm("匯入 JSON","匯入後會覆蓋目前作品。確定繼續嗎？");
+          if(!ok) return;
+          data = safe;
+          renderAll();
+          saveNow();
+          showToast("✅ JSON 已安全匯入");
+          showScreen("editor");
+        }catch(err){
+          console.error(err);
+          showToast("❌ JSON 格式不正確或內容無法辨識");
+        }
+      };
+      reader.onerror = () => showToast("❌ 無法讀取檔案");
+      reader.readAsText(file,"utf-8");
+    }
+
+    async function resetAll(){
+      const ok = await askConfirm("全部重置","會刪除目前 v3 作品並恢復預設內容。此操作無法復原。");
+      if(!ok) return;
+      localStorage.removeItem(STORAGE_KEY);
+      data = structuredCloneSafe(DEFAULT_DATA);
+      renderAll();
+      saveNow();
+      showToast("已恢復預設內容");
+      showScreen("home");
+    }
+
+    function prepareCloneForCapture(){
+      captureDOMToData();
+
+      const clone = exportArea.cloneNode(true);
+      clone.removeAttribute("id");
+      clone.hidden = false;
+      clone.classList.add("offline-clone");
+      clone.querySelectorAll("[contenteditable]").forEach(el => el.removeAttribute("contenteditable"));
+      clone.querySelectorAll(".node-toolbar").forEach(el => el.remove());
+      document.body.appendChild(clone);
+      return clone;
+    }
+
+    async function exportPNG(){
+      saveNow();
+      if(typeof window.html2canvas !== "function"){
+        showToast("❌ PNG 模組未載入，請確認網路後重新整理");
+        return;
+      }
+
+      showToast("⏳ 正在生成高清 PNG…");
+      const clone = prepareCloneForCapture();
+
+      try{
+        if(document.fonts?.ready) await document.fonts.ready;
+        const artBg = getComputedStyle(clone).getPropertyValue("--art-card").trim() || "#ffffff";
+        const canvas = await window.html2canvas(clone,{
+          scale:2,
+          backgroundColor:artBg,
+          useCORS:true,
+          logging:false,
+          windowWidth:900,
+          scrollX:0,
+          scrollY:0
+        });
+
+        const link = document.createElement("a");
+        link.download = `邏輯圖_${data.style}_${Date.now()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showToast("✅ 高清 PNG 已匯出");
+      }catch(err){
+        console.error(err);
+        showToast("❌ PNG 匯出失敗，請查看操作指南");
+      }finally{
+        clone.remove();
+      }
+    }
+
+    function printPDF(){
+      saveNow();
+      showScreen("export");
+      requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+    }
+
+    function stripDangerousPaste(e){
+      if(!e.target.closest("[contenteditable='true']")) return;
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+      const sel = window.getSelection();
+      if(!sel.rangeCount) return;
+      sel.deleteFromDocument();
+      sel.getRangeAt(0).insertNode(document.createTextNode(text));
+      sel.collapseToEnd();
+      scheduleSave();
+    }
+
+    function cleanupEmptyTags(){
+      const tags = $$(".logic-tag",logicLines);
+      let changed = false;
+      tags.forEach(tag => {
+        if(!tag.textContent.trim()){
+          tag.remove();
+          changed = true;
+        }
+      });
+      if(changed) saveNow();
+    }
+
+    // 導覽
+    document.addEventListener("click",e => {
+      const go = e.target.closest("[data-go]");
+      if(go) showScreen(go.dataset.go);
+    });
+    $("#backBtn").addEventListener("click",() => showScreen("home"));
+
+    // 偏好
+    $("#themeBtn").addEventListener("click",cycleTheme);
+    $("#fontBtn").addEventListener("click",cycleFont);
+
+    // 編輯事件：共用委派，支援動態節點
+    exportArea.addEventListener("input",scheduleSave);
+    exportArea.addEventListener("blur",e => {
+      if(e.target.classList?.contains("logic-tag")) cleanupEmptyTags();
+      saveNow();
+    },true);
+    exportArea.addEventListener("paste",stripDangerousPaste);
+
+    // 編輯工具
+    $("#addNodeBtn").addEventListener("click",addNode);
+    $("#addTagBtn").addEventListener("click",addTag);
+    $("#sampleBtn").addEventListener("click",loadSample);
+    $("#quickSampleBtn").addEventListener("click",loadSample);
+
+    // 風格
+    $("#styleGrid").addEventListener("click",e => {
+      const card = e.target.closest(".style-card");
+      if(!card) return;
+      const style = card.dataset.style;
+      if(!STYLE_NAMES[style]) return;
+      data.style = style;
+      exportArea.dataset.style = style;
+      updateStyleCards();
+      saveNow();
+      showToast(`✅ 已套用：${STYLE_NAMES[style]}`);
+    });
+
+    // 輸出
+    $("#exportPngBtn").addEventListener("click",exportPNG);
+    $("#printPdfBtn").addEventListener("click",printPDF);
+
+    // 資料
+    $("#exportJsonBtn").addEventListener("click",exportJSON);
+    $("#importJsonBtn").addEventListener("click",() => $("#jsonFileInput").click());
+    $("#jsonFileInput").addEventListener("change",e => {
+      importJSONFile(e.target.files?.[0]);
+      e.target.value = "";
+    });
+    $("#migrateBtn").addEventListener("click",() => tryMigrateLegacy(true));
+    $("#resetBtn").addEventListener("click",resetAll);
+
+    // 確認對話框
+    $("#confirmCancel").addEventListener("click",() => closeConfirm(false));
+    $("#confirmOk").addEventListener("click",() => closeConfirm(true));
+    $("#confirmModal").addEventListener("click",e => {
+      if(e.target.id === "confirmModal") closeConfirm(false);
+    });
+    document.addEventListener("keydown",e => {
+      if(e.key === "Escape" && $("#confirmModal").classList.contains("open")) closeConfirm(false);
+    });
+
+    // 頁面離開前強制保存
+    window.addEventListener("pagehide",saveNow);
+    document.addEventListener("visibilitychange",() => {
+      if(document.visibilityState === "hidden") saveNow();
+    });
+
+    // 啟動
+    loadPrefs();
+    loadData();
+    showScreen("home");
+  })();
+  </script>
+</body>
+</html>
     .logic-root-title .text { font-size: 1.2rem; font-weight: 700; }
     .logic-root-sub { margin-top: 10px; font-size: 0.85rem; opacity: 0.7; cursor: text; }
     .logic-root-sub:focus { outline: 1px dashed var(--accent); padding: 4px; }
