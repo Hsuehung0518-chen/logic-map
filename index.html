@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>邏輯圖建構工具｜多風格切換</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <style>
+    :root {
+      --bg: #f5f5f5; --fg: #222; --accent: #3b82f6;
+      --card-bg: #ffffff; --card-border: rgba(0,0,0,0.06);
+      --shadow: 0 12px 30px rgba(0,0,0,0.08);
+      --radius-lg: 18px; --radius-sm: 10px;
+      --font-main: system-ui, -apple-system, "Segoe UI", sans-serif;
+      --font-title: var(--font-main);
+      --line-color: rgba(0,0,0,0.12);
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    /* 風格變數 (保留並優化原有 7 種風格) */
+    body[data-style="zen"] { --bg: #f7f4ee; --fg: #2f2a25; --accent: #7c9c6b; --card-bg: #fbf8f2; --card-border: rgba(0,0,0,0.08); --shadow: 0 18px 40px rgba(0,0,0,0.08); --radius-lg: 20px; --font-main: "Noto Serif TC", serif; --font-title: var(--font-main); --line-color: rgba(80,80,80,0.18); }
+    body[data-style="ink"] { --bg: #fdfcf8; --fg: #1f1f1f; --accent: #444; --card-bg: #ffffff; --card-border: rgba(0,0,0,0.12); --shadow: 0 16px 36px rgba(0,0,0,0.12); --radius-lg: 16px; --font-main: "Noto Serif TC", serif; --font-title: var(--font-main); --line-color: rgba(0,0,0,0.25); }
+    body[data-style="showa"] { --bg: #fef6e8; --fg: #3b2c28; --accent: #e67a4e; --card-bg: #fffaf0; --card-border: rgba(120,80,60,0.18); --shadow: 0 18px 40px rgba(120,80,60,0.18); --radius-lg: 22px; --font-main: "Noto Sans TC", sans-serif; --font-title: var(--font-main); --line-color: rgba(180,120,80,0.35); }
+    body[data-style="clay"] { --bg: #f3f1ff; --fg: #26233a; --accent: #7c3aed; --card-bg: #ffffff; --card-border: rgba(124,58,237,0.18); --shadow: 0 22px 50px rgba(76,29,149,0.18); --radius-lg: 26px; --font-main: "Noto Sans TC", sans-serif; --font-title: var(--font-main); --line-color: rgba(124,58,237,0.25); }
+    body[data-style="sticker"] { --bg: #fdfdfd; --fg: #1f2933; --accent: #ff6b6b; --card-bg: #ffffff; --card-border: rgba(0,0,0,0.18); --shadow: 0 20px 40px rgba(0,0,0,0.16); --radius-lg: 24px; --font-main: "Noto Sans TC", sans-serif; --font-title: var(--font-main); --line-color: rgba(0,0,0,0.22); }
+    body[data-style="baroque"] { --bg: #f7f2ea; --fg: #2b1b18; --accent: #b8860b; --card-bg: #fbf5e9; --card-border: rgba(80,50,30,0.25); --shadow: 0 24px 50px rgba(60,40,30,0.25); --radius-lg: 28px; --font-main: "Noto Serif TC", serif; --font-title: var(--font-main); --line-color: rgba(120,80,40,0.35); }
+    body[data-style="tech"] { --bg: #050816; --fg: #e5e7eb; --accent: #38bdf8; --card-bg: #0b1220; --card-border: rgba(148,163,184,0.35); --shadow: 0 24px 60px rgba(15,23,42,0.8); --radius-lg: 18px; --font-main: system-ui, sans-serif; --font-title: "Orbitron", system-ui, sans-serif; --line-color: rgba(148,163,184,0.45); }
+
+    body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--font-main); -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s; }
+    .page { max-width: 960px; margin: 0 auto; padding: 20px 16px calc(80px + var(--safe-bottom)); }
+    
+    /* Header */
+    .header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    h1 { margin: 0; font-family: var(--font-title); font-size: 1.4rem; letter-spacing: 0.04em; }
+    .subtitle { font-size: 0.85rem; opacity: 0.7; margin-top: 4px; }
+    
+    /* Style Switcher */
+    .style-switcher { display: flex; flex-wrap: wrap; gap: 8px; }
+    .style-btn { border: 1px solid var(--card-border); background: var(--card-bg); color: var(--fg); padding: 8px 12px; border-radius: 999px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); transition: all 0.15s ease; }
+    .style-btn span.dot { width: 8px; height: 8px; border-radius: 999px; background: var(--accent); }
+    .style-btn.active { border-color: var(--accent); box-shadow: 0 6px 14px rgba(0,0,0,0.1); transform: translateY(-1px); font-weight: 600; }
+
+    /* Logic Card */
+    .logic-card { background: var(--card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--card-border); padding: 20px 16px; position: relative; overflow: hidden; transition: all 0.3s; }
+    .logic-root { text-align: center; margin-bottom: 20px; }
+    .logic-root-title { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--accent); background: color-mix(in srgb, var(--card-bg) 85%, var(--accent) 15%); cursor: text; transition: box-shadow 0.2s; }
+    .logic-root-title:focus { outline: 2px solid var(--accent); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); }
+    .logic-root-title .label { font-size: 0.75rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em; }
+    .logic-root-title .text { font-size: 1.1rem; font-weight: 700; }
+    .logic-root-sub { margin-top: 8px; font-size: 0.8rem; opacity: 0.7; cursor: text; }
+    .logic-root-sub:focus { outline: 1px dashed var(--accent); padding: 4px; border-radius: 4px; }
+
+    .logic-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    @media (max-width: 720px) { .logic-grid { grid-template-columns: 1fr; } }
+    
+    .logic-node { position: relative; padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background: rgba(255,255,255,0.7); backdrop-filter: blur(4px); transition: border-color 0.2s; }
+    body[data-style="tech"] .logic-node { background: rgba(15,23,42,0.6); }
+    .logic-node:focus-within { border-color: var(--accent); }
+    .logic-node-title { font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; cursor: text; }
+    .logic-node-title:focus { outline: none; border-bottom: 1px solid var(--accent); }
+    .logic-node-title::before { content: ""; width: 10px; height: 10px; border-radius: 999px; background: var(--accent); flex-shrink: 0; }
+    .logic-node-body { font-size: 0.85rem; line-height: 1.6; opacity: 0.85; cursor: text; min-height: 60px; }
+    .logic-node-body:focus { outline: none; background: rgba(0,0,0,0.02); border-radius: 4px; padding: 4px; }
+    .logic-node-body ul { margin: 4px 0 0; padding-left: 18px; }
+    .logic-node-body li { margin: 4px 0; }
+
+    .logic-lines { margin-top: 20px; padding-top: 14px; border-top: 1px dashed var(--line-color); font-size: 0.8rem; opacity: 0.8; display: flex; flex-wrap: wrap; gap: 8px; }
+    .logic-tag { padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line-color); background: var(--card-bg); cursor: text; transition: all 0.2s; }
+    .logic-tag:focus { outline: 1px solid var(--accent); border-color: var(--accent); }
+
+    /* FAB & Drawer */
+    .fab { position: fixed; bottom: calc(24px + var(--safe-bottom)); right: 24px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: #fff; border: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2); font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 100; transition: transform 0.2s; }
+    .fab:active { transform: scale(0.92); }
+    
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 400px; background: var(--card-bg); color: var(--fg); z-index: 201; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 24px; overflow-y: auto; box-shadow: -10px 0 40px rgba(0,0,0,0.1); }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--card-border); }
+    .drawer-title { font-size: 1.2rem; font-weight: 700; margin: 0; }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--fg); padding: 4px; }
+    
+    .drawer-section { margin-bottom: 24px; }
+    .drawer-section h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; margin-bottom: 12px; }
+    .action-btn { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background: var(--bg); color: var(--fg); font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
+    .action-btn:hover { border-color: var(--accent); background: color-mix(in srgb, var(--bg) 90%, var(--accent) 10%); }
+    .action-btn.primary { background: var(--accent); color: #fff; border: none; font-weight: 600; }
+    .action-btn.primary:hover { opacity: 0.9; }
+    
+    .guide-step { background: var(--bg); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 10px; font-size: 0.85rem; line-height: 1.5; border-left: 3px solid var(--accent); }
+
+    /* Toast */
+    .toast { position: fixed; bottom: calc(90px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: #333; color: #fff; padding: 10px 20px; border-radius: 999px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: all 0.3s; z-index: 300; white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    
+    /* Utility */
+    .hidden-file-input { display: none; }
+  </style>
+</head>
+<body data-style="zen">
+  <div class="page">
+    <header class="header">
+      <div class="title-row">
+        <div>
+          <h1>邏輯圖建構工具</h1>
+          <div class="subtitle">點擊任何文字即可編輯。自動保存，支援匯出。</div>
+        </div>
+      </div>
+      <div class="style-switcher" id="styleSwitcher">
+        <button class="style-btn active" data-style="zen"><span class="dot"></span> 禪風</button>
+        <button class="style-btn" data-style="ink"><span class="dot"></span> 水墨</button>
+        <button class="style-btn" data-style="showa"><span class="dot"></span> 昭和</button>
+        <button class="style-btn" data-style="clay"><span class="dot"></span> 黏土</button>
+        <button class="style-btn" data-style="sticker"><span class="dot"></span> 貼紙</button>
+        <button class="style-btn" data-style="baroque"><span class="dot"></span> 巴洛克</button>
+        <button class="style-btn" data-style="tech"><span class="dot"></span> 科技</button>
+      </div>
+    </header>
+
+    <section class="logic-card" id="logicCard">
+      <div class="logic-root">
+        <div class="logic-root-title" contenteditable="true" id="rootTitle">
+          <div class="label">核心命題 Core Thesis</div>
+          <div class="text">師者，所以傳道受業解惑也</div>
+        </div>
+        <div class="logic-root-sub" contenteditable="true" id="rootSub">
+          可替換為任何文章的中心句，例如：產品主張、論文命題、故事主題。
+        </div>
+      </div>
+
+      <div class="logic-grid">
+        <article class="logic-node">
+          <div class="logic-node-title" contenteditable="true" id="node1Title">一、定義與本質</div>
+          <div class="logic-node-body" contenteditable="true" id="node1Body">
+            <ul><li>界定核心功能與背景。</li><li>說明為何必須解決此問題。</li><li>概念定義與問題陳述。</li></ul>
+          </div>
+        </article>
+        <article class="logic-node">
+          <div class="logic-node-title" contenteditable="true" id="node2Title">二、問題與對比</div>
+          <div class="logic-node-body" contenteditable="true" id="node2Body">
+            <ul><li>理想與現況的落差。</li><li>結構性問題或痛點分析。</li><li>風險說明或反面論證。</li></ul>
+          </div>
+        </article>
+        <article class="logic-node">
+          <div class="logic-node-title" contenteditable="true" id="node3Title">三、原則與方法</div>
+          <div class="logic-node-body" contenteditable="true" id="node3Body">
+            <ul><li>具體解法與行動策略。</li><li>資源分配與專業分工。</li><li>可落地的 SOP 概要。</li></ul>
+          </div>
+        </article>
+      </div>
+
+      <div class="logic-lines" id="logicLines">
+        <span class="logic-tag" contenteditable="true">有惑 → 必須從師</span>
+        <span class="logic-tag" contenteditable="true">擇師標準：道之所存</span>
+        <span class="logic-tag" contenteditable="true">古今對比 → 聖益聖，愚益愚</span>
+        <span class="logic-tag" contenteditable="true">聞道先後｜術業專攻</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- Floating Action Button -->
+  <button class="fab" id="fabBtn" aria-label="開啟設定與說明">⚙️</button>
+
+  <!-- Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <div class="drawer" id="drawer">
+    <div class="drawer-header">
+      <h2 class="drawer-title">工具控制台</h2>
+      <button class="close-btn" id="closeDrawer">✕</button>
+    </div>
+
+    <div class="drawer-section">
+      <h3>📘 小白友善導覽</h3>
+      <div class="guide-step">1. <b>直接點擊</b>圖中任何文字即可開始編輯。</div>
+      <div class="guide-step">2. 編輯內容會<b>自動保存</b>在瀏覽器中，關閉再開啟不會遺失。</div>
+      <div class="guide-step">3. 點擊上方圓形按鈕可切換 7 種視覺風格。</div>
+      <div class="guide-step">4. 使用下方按鈕可將成果匯出為檔案或純文字。</div>
+    </div>
+
+    <div class="drawer-section">
+      <h3>💾 資產管理</h3>
+      <button class="action-btn primary" id="exportJsonBtn">📥 匯出設定檔 (JSON)</button>
+      <button class="action-btn" id="importJsonBtn">📤 匯入設定檔 (JSON)</button>
+      <input type="file" id="fileInput" class="hidden-file-input" accept=".json" />
+      <button class="action-btn" id="copyTextBtn">📋 一鍵複製純文字</button>
+      <button class="action-btn" style="color: #ef4444; border-color: #fca5a5;" id="clearDataBtn">🗑️ 清空所有內容</button>
+    </div>
+    
+    <div class="drawer-section">
+      <h3>ℹ️ 關於此工具</h3>
+      <div style="font-size: 0.8rem; opacity: 0.7; line-height: 1.5;">
+        遵循「器在外，道在內」原則設計。<br>
+        無後端、純前端運作，保障資料隱私。<br>
+        任何 Pain (編輯時間) 都應轉化為 Gain (可保存資產)。
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">操作成功</div>
+
+  <script>
+    // === 1. 狀態管理與初始化 ===
+    const editableIds = ['rootTitle', 'rootSub', 'node1Title', 'node1Body', 'node2Title', 'node2Body', 'node3Title', 'node3Body'];
+    const STORAGE_KEY = 'logicMapData_v1';
+
+    function loadData() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.style) document.body.setAttribute('data-style', data.style);
+          editableIds.forEach(id => {
+            if (data[id]) document.getElementById(id).innerHTML = data[id];
+          });
+          if (data.tags) {
+            const container = document.getElementById('logicLines');
+            container.innerHTML = data.tags.map(t => `<span class="logic-tag" contenteditable="true">${t}</span>`).join('');
+            reattachTagListeners();
+          }
+          updateStyleButtons();
+        } catch (e) {
+          console.error("載入失敗", e);
+        }
+      }
+    }
+
+    function saveData() {
+      const data = { style: document.body.getAttribute('data-style') };
+      editableIds.forEach(id => {
+        data[id] = document.getElementById(id).innerHTML;
+      });
+      const tags = Array.from(document.querySelectorAll('.logic-tag')).map(el => el.innerHTML);
+      data.tags = tags;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // === 2. 風格切換 ===
+    const styleBtns = document.querySelectorAll('.style-btn');
+    styleBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const style = btn.getAttribute('data-style');
+        document.body.setAttribute('data-style', style);
+        updateStyleButtons();
+        saveData();
+        showToast(`已切換風格：${btn.innerText.trim()}`);
+      });
+    });
+
+    function updateStyleButtons() {
+      const currentStyle = document.body.getAttribute('data-style');
+      styleBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-style') === currentStyle);
+      });
+    }
+
+    // === 3. 即時編輯與自動保存 ===
+    editableIds.forEach(id => {
+      document.getElementById(id).addEventListener('input', saveData);
+    });
+
+    function reattachTagListeners() {
+      document.querySelectorAll('.logic-tag').forEach(tag => {
+        tag.addEventListener('input', saveData);
+      });
+    }
+    // 初始綁定
+    document.getElementById('logicLines').addEventListener('input', (e) => {
+      if(e.target.classList.contains('logic-tag')) saveData();
+    });
+
+    // === 4. Drawer 控制 ===
+    const drawer = document.getElementById('drawer');
+    const overlay = document.getElementById('drawerOverlay');
+    const fabBtn = document.getElementById('fabBtn');
+    const closeDrawer = document.getElementById('closeDrawer');
+
+    function openDrawer() {
+      drawer.classList.add('open');
+      overlay.classList.add('open');
+    }
+    function closeDrawerFn() {
+      drawer.classList.remove('open');
+      overlay.classList.remove('open');
+    }
+
+    fabBtn.addEventListener('click', openDrawer);
+    closeDrawer.addEventListener('click', closeDrawerFn);
+    overlay.addEventListener('click', closeDrawerFn);
+
+    // === 5. 資產管理功能 ===
+    // 匯出 JSON
+    document.getElementById('exportJsonBtn').addEventListener('click', () => {
+      saveData();
+      const dataStr = localStorage.getItem(STORAGE_KEY);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `邏輯圖設定_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('✅ 已成功匯出 JSON 檔案');
+    });
+
+    // 匯入 JSON
+    document.getElementById('importJsonBtn').addEventListener('click', () => {
+      document.getElementById('fileInput').click();
+    });
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target.result);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          loadData();
+          showToast('✅ 已成功匯入並更新內容');
+          closeDrawerFn();
+        } catch (err) {
+          showToast('❌ 檔案格式錯誤');
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = ''; // reset
+    });
+
+    // 複製純文字
+    document.getElementById('copyTextBtn').addEventListener('click', () => {
+      const root = document.getElementById('rootTitle').innerText + '\n' + document.getElementById('rootSub').innerText;
+      let text = `【${root}】\n\n`;
+      for (let i = 1; i <= 3; i++) {
+        text += `${document.getElementById(`node${i}Title`).innerText}\n`;
+        text += document.getElementById(`node${i}Body`).innerText.replace(/\n\s*\n/g, '\n').trim() + '\n\n';
+      }
+      text += '關鍵標籤：\n' + Array.from(document.querySelectorAll('.logic-tag')).map(t => t.innerText).join(' | ');
+      
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('✅ 已複製純文字至剪貼簿');
+      }).catch(() => {
+        showToast('❌ 複製失敗，請手動選取');
+      });
+    });
+
+    // 清空資料
+    document.getElementById('clearDataBtn').addEventListener('click', () => {
+      if (confirm('確定要清空所有內容並重置為預設值嗎？此動作無法復原。')) {
+        localStorage.removeItem(STORAGE_KEY);
+        location.reload();
+      }
+    });
+
+    // === 6. Toast 提示 ===
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    // === 啟動 ===
+    loadData();
+  </script>
+</body>
+</html>
